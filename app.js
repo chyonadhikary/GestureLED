@@ -1,5 +1,13 @@
 const PINS = [13, 14, 27, 26, 25];
 const FINGERS = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky'];
+const HAND_CONNECTIONS = [
+  [0, 1], [1, 2], [2, 3], [3, 4],
+  [0, 5], [5, 6], [6, 7], [7, 8],
+  [5, 9], [9, 10], [10, 11], [11, 12],
+  [9, 13], [13, 14], [14, 15], [15, 16],
+  [13, 17], [17, 18], [18, 19], [19, 20],
+  [0, 17], [17, 13], [13, 9], [9, 5],
+];
 const state = {
   mode: 1,
   cameraStream: null,
@@ -11,6 +19,9 @@ const state = {
   fingers: 0,
   demo: 'none',
   lastBrightnessSentAt: 0,
+  lastLandmarks: null,
+  lastHandAt: 0,
+  handTrackingRun: 0,
   lastCommands: { 1: 'MODE1:OFF', 2: 'MODE2:0', 3: 'MODE3:0' },
 };
 
@@ -176,6 +187,7 @@ function startCameraOverlay() {
     ctx.strokeStyle = `rgba(43,255,0,${pulse})`;
     ctx.lineWidth = 1;
     ctx.strokeRect(18, 18, width - 36, height - 36);
+    drawHandOverlay(ctx, width, height, performance.now());
     frameCount += 1;
     const now = performance.now();
     if (now - lastTime > 900) {
@@ -188,20 +200,63 @@ function startCameraOverlay() {
   draw();
 }
 
+function drawHandOverlay(ctx, width, height, now) {
+  if (!state.lastLandmarks || now - state.lastHandAt > 260) return;
+  const points = state.lastLandmarks;
+  const point = (index) => ({ x: points[index].x * width, y: points[index].y * height });
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.shadowColor = 'rgba(43,255,0,.8)';
+  ctx.shadowBlur = 12;
+  ctx.strokeStyle = 'rgba(82,255,51,.88)';
+  ctx.lineWidth = Math.max(2, Math.min(width, height) * 0.006);
+  HAND_CONNECTIONS.forEach(([from, to]) => {
+    const a = point(from);
+    const b = point(to);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  });
+  const wave = 1 + Math.sin(now / 150) * 0.18;
+  points.forEach((_, index) => {
+    const p = point(index);
+    const fingertip = [4, 8, 12, 16, 20].includes(index);
+    ctx.beginPath();
+    ctx.fillStyle = fingertip ? '#d6ffc9' : '#2bff00';
+    ctx.arc(p.x, p.y, (fingertip ? 4.6 : 2.5) * (fingertip ? wave : 1), 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
 function startHandTracking(video) {
   if (typeof Hands === 'undefined') {
     $('#trackingStatus').textContent = 'Camera Live · Demo Tracking';
     return;
   }
   const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+  const runId = ++state.handTrackingRun;
   hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.62, minTrackingConfidence: 0.58 });
   hands.onResults((results) => {
     const landmarks = results.multiHandLandmarks?.[0];
     if (!landmarks) {
       $('#trackingStatus').textContent = 'No Hand Detected';
+      if (performance.now() - state.lastHandAt > 180) state.lastLandmarks = null;
       if (state.mode === 1) setPalm('waiting', false);
       return;
     }
+    const previous = state.lastLandmarks;
+    state.lastLandmarks = landmarks.map((landmark, index) => {
+      const old = previous?.[index];
+      return old ? {
+        x: old.x * 0.56 + landmark.x * 0.44,
+        y: old.y * 0.56 + landmark.y * 0.44,
+        z: old.z * 0.56 + landmark.z * 0.44,
+      } : { x: landmark.x, y: landmark.y, z: landmark.z };
+    });
+    state.lastHandAt = performance.now();
     $('#trackingStatus').textContent = 'Hand Detected';
     const extended = [8, 12, 16, 20].map((tip) => landmarks[tip].y < landmarks[tip - 2].y);
     const thumbExtended = Math.abs(landmarks[4].x - landmarks[2].x) > 0.08;
@@ -221,7 +276,7 @@ function startHandTracking(video) {
     }
   });
   const processFrame = async () => {
-    if (!state.cameraStream) return;
+    if (!state.cameraStream || runId !== state.handTrackingRun) return;
     try { await hands.send({ image: video }); } catch { /* keep camera usable when model assets are blocked */ }
     window.setTimeout(processFrame, 100);
   };

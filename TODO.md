@@ -22,3 +22,8 @@
 - [x] Implement live hardware channel telemetry for GPIO 13, 14, 27, 26, and 25.
   - Each mode must show five output rows with LED number, visual rail, state, and last command telemetry.
   - Demo controls must make the dashboard visibly testable without a physical hand or ESP32.
+
+- [x] Render and stabilize the live hand animation overlay.
+  - Detected hands must show smoothed landmark points, finger connections, fingertip pulse animation, and no-hand cleanup instead of a static camera frame.
+  - Continuous tracking must avoid duplicate loops and repeated identical serial commands.
+  - Visible creator attribution must use Chyon Adhikary.
