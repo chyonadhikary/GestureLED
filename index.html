@@ -6,11 +6,11 @@
     <meta name="theme-color" content="#0e0f11" />
     <meta name="description" content="GestureLED — ESP32 hardware vision controller." />
     <title>GestureLED — ESP32 Hardware Vision Controller</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="styles.css" />
     <script type="module" src="https://skr-electronics-lab.github.io/esp-flasher-button/esp-flasher-button.js"></script>
   </head>
   <body>
@@ -34,7 +34,7 @@
           </div>
         </div>
         <div class="header-actions">
-          <esp-flasher-button id="firmwareFlasher" manifest="/firmware/manifest.json" label="Install Firmware" theme="dark" size="13.5" baud="460800" wifi="false" no-wifi>
+          <esp-flasher-button id="firmwareFlasher" manifest="firmware/manifest.json" label="Install Firmware" theme="dark" size="13.5" baud="460800" wifi="false" no-wifi>
             <button slot="activate" class="btn-flasher-custom" type="button" title="Flash GestureLED firmware to ESP32">
               <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z" /></svg>
               <span>Install Firmware</span>
@@ -129,6 +129,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-    <script src="/app.js" defer></script>
+    <script src="app.js" defer></script>
   </body>
 </html>
