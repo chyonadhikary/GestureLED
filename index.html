@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="https://skr-electronics-lab.github.io/esp-flasher-button/esp-flasher-button.js"></script>
   </head>
   <body>
     <div class="app-container">
@@ -33,10 +34,12 @@
           </div>
         </div>
         <div class="header-actions">
-          <button class="btn-flasher-custom" id="installFirmware" type="button" title="Open firmware installation guide">
-            <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z" /></svg>
-            <span>Install Firmware</span>
-          </button>
+          <esp-flasher-button id="firmwareFlasher" manifest="/firmware/manifest.json" label="Install Firmware" theme="dark" size="13.5" baud="460800" wifi="false" no-wifi>
+            <button slot="activate" class="btn-flasher-custom" type="button" title="Flash GestureLED firmware to ESP32">
+              <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z" /></svg>
+              <span>Install Firmware</span>
+            </button>
+          </esp-flasher-button>
           <button class="btn-serial" id="connectSerial" type="button" title="Connect to ESP32 over Web Serial at 115200 baud">
             <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.7 19.3 19 5M21 3l-3 1 2 2ZM9.3 7.7 5 12l2 5m3-3 5 2 3.5-3.5" /><circle cx="10" cy="7" r="1" /><circle cx="4" cy="20" r="1" /><circle cx="18" cy="12" r="1" /></svg>
             <span id="serialButtonText">Connect USB Serial</span>
@@ -124,9 +127,6 @@
       <footer class="app-footer"><span>Created by <strong>Chyon Adhikary</strong></span><span>Web Serial · 115200 baud</span></footer>
     </div>
 
-    <dialog class="firmware-dialog" id="firmwareDialog">
-      <div class="dialog-card"><div class="dialog-head"><div><span class="eyebrow">ESP32 deployment</span><h2>Install GestureLED firmware</h2></div><button class="dialog-close" id="closeFirmware" type="button" aria-label="Close">×</button></div><p>Connect your ESP32 over USB, select the board port, and flash the firmware from the GestureLED repository. The dashboard uses 115200 baud for command delivery.</p><div class="dialog-actions"><a class="btn-solid-primary" href="https://github.com/skr-electronics-lab/GestureLED" target="_blank" rel="noopener">Open firmware repo</a><button class="btn-ghost" id="firmwareDone" type="button">Got it</button></div></div>
-    </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <script src="/app.js" defer></script>

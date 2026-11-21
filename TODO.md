@@ -27,3 +27,8 @@
   - Detected hands must show smoothed landmark points, finger connections, fingertip pulse animation, and no-hand cleanup instead of a static camera frame.
   - Continuous tracking must avoid duplicate loops and repeated identical serial commands.
   - Visible creator attribution must use Chyon Adhikary.
+
+- [x] Make firmware installation and USB Serial controls genuinely operational.
+  - Install Firmware must use a real ESP32 WROOM-32 manifest with bootloader at `0x1000`, partitions at `0x8000`, boot_app0 at `0xE000`, application at `0x10000`, 460800 flashing baud, and the public four-part firmware artifacts.
+  - The flasher must use chip detection, progress, verification, reboot, and no Wi-Fi provisioning for this firmware.
+  - Connect USB Serial must open at 115200 baud, read device output, send newline-terminated MODE1/MODE2/MODE3 commands, cleanly release reader/writer locks, and recover when the cable is removed.

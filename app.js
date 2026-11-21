@@ -13,6 +13,7 @@ const state = {
   cameraStream: null,
   serialPort: null,
   serialWriter: null,
+  serialReader: null,
   palm: 'waiting',
   brightness: 0,
   distance: 0,
@@ -291,13 +292,7 @@ async function connectSerial() {
     return;
   }
   if (state.serialPort) {
-    try { await state.serialPort.close(); } catch {}
-    state.serialPort = null;
-    state.serialWriter = null;
-    $('#statusDot').classList.remove('connected');
-    $('#statusText').textContent = 'Disconnected';
-    $('#serialButtonText').textContent = 'Connect USB Serial';
-    showToast('USB Serial disconnected.');
+    await disconnectSerial('USB Serial disconnected.');
     return;
   }
   try {
@@ -308,10 +303,62 @@ async function connectSerial() {
     $('#statusDot').classList.add('connected');
     $('#statusText').textContent = 'Connected';
     $('#serialButtonText').textContent = 'Disconnect USB Serial';
+    void readSerialOutput(port);
     showToast('ESP32 connected at 115200 baud.');
   } catch (error) {
     if (error?.name !== 'AbortError') showToast('Could not connect to that serial port.');
   }
+}
+
+async function readSerialOutput(port) {
+  if (!port.readable) return;
+  const reader = port.readable.getReader();
+  state.serialReader = reader;
+  const decoder = new TextDecoder();
+  let buffer = '';
+  try {
+    while (state.serialPort === port) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split(/\r?\n/);
+      buffer = lines.pop() || '';
+      lines.filter(Boolean).forEach((line) => {
+        if (/controller ready|hardware.*initialized/i.test(line)) {
+          $('#statusText').textContent = 'Connected · Ready';
+          window.clearTimeout(readSerialOutput.statusTimer);
+          readSerialOutput.statusTimer = window.setTimeout(() => {
+            if (state.serialPort === port) $('#statusText').textContent = 'Connected';
+          }, 2600);
+        }
+      });
+    }
+  } catch {
+    if (state.serialPort === port) await disconnectSerial('Serial connection lost.');
+  } finally {
+    try { reader.releaseLock(); } catch {}
+    if (state.serialReader === reader) state.serialReader = null;
+  }
+}
+
+async function disconnectSerial(message = 'USB Serial disconnected.') {
+  const port = state.serialPort;
+  state.serialPort = null;
+  if (state.serialReader) {
+    try { await state.serialReader.cancel(); } catch {}
+    state.serialReader = null;
+  }
+  if (state.serialWriter) {
+    try { state.serialWriter.releaseLock(); } catch {}
+    state.serialWriter = null;
+  }
+  if (port) {
+    try { await port.close(); } catch {}
+  }
+  $('#statusDot').classList.remove('connected');
+  $('#statusText').textContent = 'Disconnected';
+  $('#serialButtonText').textContent = 'Connect USB Serial';
+  showToast(message);
 }
 
 function initDemoControls() {
@@ -326,14 +373,6 @@ function initDemoControls() {
   }));
 }
 
-function initDialogs() {
-  const dialog = $('#firmwareDialog');
-  $('#installFirmware').addEventListener('click', () => dialog.showModal());
-  $('#closeFirmware').addEventListener('click', () => dialog.close());
-  $('#firmwareDone').addEventListener('click', () => dialog.close());
-  dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
-}
-
 makeChannelRows();
 makeFingerControls();
 updateMatrices();
@@ -341,5 +380,13 @@ $$('.tab-btn').forEach((tab) => tab.addEventListener('click', () => setMode(tab.
 $('#enableCamera').addEventListener('click', enableCamera);
 $('#connectSerial').addEventListener('click', connectSerial);
 initDemoControls();
-initDialogs();
-window.addEventListener('beforeunload', () => state.cameraStream?.getTracks().forEach((track) => track.stop()));
+if ('serial' in navigator) {
+  navigator.serial.addEventListener('disconnect', ({ port }) => {
+    if (state.serialPort === port) void disconnectSerial('ESP32 USB connection was removed.');
+  });
+}
+window.addEventListener('beforeunload', () => {
+  state.cameraStream?.getTracks().forEach((track) => track.stop());
+  if (state.serialReader) void state.serialReader.cancel();
+  if (state.serialWriter) try { state.serialWriter.releaseLock(); } catch {}
+});
