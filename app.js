@@ -207,10 +207,10 @@ function drawHandOverlay(ctx, width, height, now) {
   ctx.save();
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  ctx.shadowColor = 'rgba(43,255,0,.8)';
-  ctx.shadowBlur = 12;
-  ctx.strokeStyle = 'rgba(82,255,51,.88)';
-  ctx.lineWidth = Math.max(2, Math.min(width, height) * 0.006);
+  ctx.shadowColor = 'rgba(43,255,0,.55)';
+  ctx.shadowBlur = 8;
+  ctx.strokeStyle = '#2bff00';
+  ctx.lineWidth = Math.max(3, Math.min(width, height) * 0.0065);
   HAND_CONNECTIONS.forEach(([from, to]) => {
     const a = point(from);
     const b = point(to);
@@ -219,13 +219,15 @@ function drawHandOverlay(ctx, width, height, now) {
     ctx.lineTo(b.x, b.y);
     ctx.stroke();
   });
-  const wave = 1 + Math.sin(now / 150) * 0.18;
+  const wave = 1 + Math.sin(now / 150) * 0.12;
   points.forEach((_, index) => {
     const p = point(index);
     const fingertip = [4, 8, 12, 16, 20].includes(index);
     ctx.beginPath();
-    ctx.fillStyle = fingertip ? '#d6ffc9' : '#2bff00';
-    ctx.arc(p.x, p.y, (fingertip ? 4.6 : 2.5) * (fingertip ? wave : 1), 0, Math.PI * 2);
+    ctx.shadowColor = 'rgba(255,28,28,.45)';
+    ctx.shadowBlur = 5;
+    ctx.fillStyle = '#ff1c1c';
+    ctx.arc(p.x, p.y, (fingertip ? 6.2 : 4.8) * (fingertip ? wave : 1), 0, Math.PI * 2);
     ctx.fill();
   });
   ctx.restore();
@@ -257,7 +259,7 @@ function startHandTracking(video) {
       } : { x: landmark.x, y: landmark.y, z: landmark.z };
     });
     state.lastHandAt = performance.now();
-    $('#trackingStatus').textContent = 'Hand Detected';
+    $('#trackingStatus').textContent = 'Hand Tracked (1)';
     const extended = [8, 12, 16, 20].map((tip) => landmarks[tip].y < landmarks[tip - 2].y);
     const thumbExtended = Math.abs(landmarks[4].x - landmarks[2].x) > 0.08;
     const fingerCount = extended.filter(Boolean).length + (thumbExtended ? 1 : 0);
